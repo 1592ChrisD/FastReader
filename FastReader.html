@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chris Fast Reader</title>
+  <style>
+    :root {
+      --bg-color: #ffffff;
+      --text-color: #000000;
+    }
+
+    body.dark {
+      --bg-color: #121212;
+      --text-color: #f0f0f0;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: sans-serif;
+      padding: 20px;
+      max-width: 800px;
+      margin: auto;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    textarea {
+      width: 100%;
+      height: 150px;
+      margin-bottom: 10px;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      border: 1px solid #ccc;
+    }
+
+    #wordDisplay {
+      font-size: 2em;
+      margin: 20px 0;
+      text-align: center;
+      min-height: 60px;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .slider-group {
+      display: flex;
+      flex-direction: column;
+      width: 200px;
+    }
+
+    .slider-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9em;
+    }
+
+    button {
+      padding: 6px 12px;
+    }
+  </style>
+</head>
+<body class="dark">
+
+
+  <h1>Chris Fast Reader</h1>
+
+  <textarea id="textInput" placeholder="Paste your text here..."></textarea>
+
+  <div class="controls">
+    <button id="startBtn">Start</button>
+    <button id="pauseBtn">Pause</button>
+    <button id="stopBtn">Stop</button>
+
+    <div class="slider-group">
+      <label for="speedSlider">Speed</label>
+      <input type="range" id="speedSlider" min="1" max="10" value="5">
+      <div class="slider-labels"><span>Slow</span><span>Fast</span></div>
+    </div>
+
+    <div class="slider-group">
+      <label for="fontSlider">Font Size</label>
+      <input type="range" id="fontSlider" min="1" max="10" value="5">
+      <div class="slider-labels"><span>Small</span><span>Large</span></div>
+    </div>
+
+    <label>
+      Theme:
+      <select id="themeSelect">
+		<option value="light">Light</option>
+		<option value="dark" selected>Dark</option>
+	</select>
+    </label>
+  </div>
+
+  <div id="wordDisplay"></div>
+
+  <script>
+    const textInput = document.getElementById("textInput");
+    const startBtn = document.getElementById("startBtn");
+    const pauseBtn = document.getElementById("pauseBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const speedSlider = document.getElementById("speedSlider");
+    const fontSlider = document.getElementById("fontSlider");
+    const themeSelect = document.getElementById("themeSelect");
+    const wordDisplay = document.getElementById("wordDisplay");
+
+    let words = [];
+    let currentIndex = 0;
+    let intervalId = null;
+    let paused = false;
+
+    function getSpeedFromSlider(value) {
+      // 1 (slow) = 1500ms, 10 (fast) = 100ms
+      return 600 - (value * 50);
+    }
+
+    function getFontSizeFromSlider(value) {
+      // 1 (small) = 1em, 10 (large) = 3em
+      return 3 + ((value - 1) * 0.5);
+    }
+
+    function startCycling() {
+      if (!words.length) {
+        words = textInput.value.trim().split(/\s+/);
+        currentIndex = 0;
+      }
+
+      if (intervalId) return;
+
+      intervalId = setInterval(() => {
+        if (currentIndex >= words.length) {
+          clearInterval(intervalId);
+          intervalId = null;
+          return;
+        }
+        wordDisplay.textContent = words[currentIndex];
+        currentIndex++;
+      }, getSpeedFromSlider(parseInt(speedSlider.value)));
+    }
+
+    function pauseCycling() {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+        paused = true;
+      } else if (paused) {
+        paused = false;
+        startCycling();
+      }
+    }
+
+    function stopCycling() {
+      clearInterval(intervalId);
+      intervalId = null;
+      currentIndex = 0;
+      words = [];
+      wordDisplay.textContent = "";
+      paused = false;
+    }
+
+    startBtn.addEventListener("click", () => {
+      stopCycling();  // reset interval with new speed if changed
+      startCycling();
+    });
+
+    pauseBtn.addEventListener("click", pauseCycling);
+    stopBtn.addEventListener("click", stopCycling);
+
+    speedSlider.addEventListener("input", () => {
+      if (intervalId) {
+        pauseCycling();
+        startCycling();
+      }
+    });
+
+    fontSlider.addEventListener("input", () => {
+      wordDisplay.style.fontSize = getFontSizeFromSlider(parseInt(fontSlider.value)) + "em";
+    });
+
+    themeSelect.addEventListener("change", () => {
+      document.body.className = themeSelect.value === "dark" ? "dark" : "";
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.code === "Space") {
+        e.preventDefault();  // prevent page scroll
+        pauseCycling();
+      }
+    });
+
+    // Apply default font size at load
+    wordDisplay.style.fontSize = getFontSizeFromSlider(parseInt(fontSlider.value)) + "em";
+  </script>
+
+</body>
+</html>
